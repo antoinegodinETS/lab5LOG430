@@ -1,12 +1,13 @@
 version: '3.8'
 
 services:
+  # === ANCIENS SERVICES ===
   api:
     build: .
     stdin_open: true
     tty: true
     ports:
-      - "8003:8003" # Expose le port 8003 pour l'API principale
+      - "8003:8003"
     depends_on:
       - db
     environment:
@@ -44,6 +45,100 @@ services:
     ports:
       - "5434:5432"
 
+  # === NOUVEAUX SERVICES ===
+  db_clients:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: clients_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: clients_db
+    volumes:
+      - db_clients_data:/var/lib/postgresql/data
+    ports:
+      - "5435:5432"
+
+  clients:
+    build: ./services/clients
+    depends_on:
+      - db_clients
+    environment:
+      - DATABASE_URL=postgresql://clients_user:password@db_clients:5432/clients_db
+    ports:
+      - "8001:8000"
+    # === BASES DE DONNÉES PANIER ===
+  db_panier1:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: panier_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: panier_db
+    volumes:
+      - db_panier1_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+
+  db_panier2:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: panier_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: panier_db
+    volumes:
+      - db_panier2_data:/var/lib/postgresql/data
+    ports:
+      - "5438:5432"
+
+  # === PANIER x2 POUR LOAD BALANCING ===
+  panier1:
+    build: ./services/panier
+    depends_on:
+      - db_panier1
+    environment:
+      - DATABASE_URL=postgresql://panier_user:password@db_panier1:5432/panier_db
+    ports:
+      - "8010:8000"
+
+  panier2:
+    build: ./services/panier
+    depends_on:
+      - db_panier2
+    environment:
+      - DATABASE_URL=postgresql://panier_user:password@db_panier2:5432/panier_db
+    ports:
+      - "8011:8000"
+
+  db_commande:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: commande_user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: commande_db
+    volumes:
+      - db_commande_data:/var/lib/postgresql/data
+    ports:
+      - "5437:5432"
+
+  commande:
+    build: ./services/commande
+    depends_on:
+      - db_commande
+    environment:
+      - DATABASE_URL=postgresql://commande_user:password@db_commande:5432/commande_db
+    ports:
+      - "8006:8000"
+
+  # === NOUVELLE GATEWAY ===
+  gateway:
+    build: ./gateway
+    ports:
+      - "8080:8000"
+    depends_on:
+      - clients
+      - panier1
+      - panier2
+      - commande
+
+  # === OBSERVABILITÉ ===
   prometheus:
     image: prom/prometheus
     restart: unless-stopped
@@ -61,6 +156,7 @@ services:
     volumes:
       - grafana-storage:/var/lib/grafana
 
+  # === REVERSE PROXY ===
   nginx:
     image: nginx:latest
     ports:
@@ -74,3 +170,7 @@ services:
 volumes:
   postgres_data:
   grafana-storage:
+  db_clients_data:
+  db_panier1_data:
+  db_panier2_data:
+  db_commande_data:
