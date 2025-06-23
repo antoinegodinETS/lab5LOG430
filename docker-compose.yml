@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  api:
+    build: .
+    stdin_open: true
+    tty: true
+    ports:
+      - "8003:8003" # Expose le port 8003 pour l'API principale
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+psycopg://lab2user:password@db:5432/lab2db
+    command: uvicorn src.main:app --host 0.0.0.0 --port 8003 --reload
+
+  interface1:
+    build: .
+    ports:
+      - "8004:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://lab2user:password@db/lab2db
+    command: uvicorn src.interface:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+
+  interface2:
+    build: .
+    ports:
+      - "8005:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://lab2user:password@db/lab2db
+    command: uvicorn src.interface:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - db
+
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: lab2user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: lab2db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+
+  prometheus:
+    image: prom/prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9091:9090"
+
+  grafana:
+    image: grafana/grafana:10.3.1
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    volumes:
+      - grafana-storage:/var/lib/grafana
+
+  nginx:
+    image: nginx:latest
+    ports:
+      - "8088:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - interface1
+      - interface2
+
+volumes:
+  postgres_data:
+  grafana-storage:
