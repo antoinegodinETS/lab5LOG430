@@ -1,19 +1,33 @@
 from fastapi import FastAPI, Request, Response
+from fastapi.middleware.cors import CORSMiddleware
 import httpx
 import itertools
 
 app = FastAPI()
 
-# URLs statiques
+# === CONFIGURATION CORS ===
+origins = [
+    "http://localhost:3000",  # Exemple : frontend local
+    "http://localhost:8080",  # Si accès à la gateway via navigateur
+    "*"  # ⚠️ À restreindre en production
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,            # Autoriser ces origines
+    allow_credentials=True,
+    allow_methods=["*"],              # Autoriser toutes les méthodes HTTP
+    allow_headers=["*"],              # Autoriser tous les headers
+)
+
+# === ROUTAGE ===
+
 CLIENTS_URL = "http://clients:8000"
 COMMANDE_URL = "http://commande:8000"
-
-# Cycle pour load balancing round-robin entre panier1 et panier2
 PANIER_URLS = itertools.cycle([
     "http://panier1:8000",
     "http://panier2:8000"
 ])
-
 
 # --- CLIENTS ---
 @app.get("/clients")
@@ -29,8 +43,7 @@ async def create_client(request: Request):
         response = await client.post(f"{CLIENTS_URL}/clients", json=data)
         return Response(content=response.content, status_code=response.status_code, media_type="application/json")
 
-
-# --- PANIER (Load Balancing) ---
+# --- PANIER ---
 @app.post("/panier")
 async def ajouter_item_panier(request: Request):
     data = await request.json()
@@ -52,7 +65,6 @@ async def lire_panier_client(client_id: int):
     async with httpx.AsyncClient() as client:
         response = await client.get(f"{url}/panier/{client_id}")
         return Response(content=response.content, status_code=response.status_code, media_type="application/json")
-
 
 # --- COMMANDE ---
 @app.post("/commande")
