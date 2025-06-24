@@ -147,4 +147,3 @@ Ce projet est sous licence **MIT**.
 
 - **Swagger / OpenAPI** : chaque service FastAPI expose sa documentation via `/docs`
 - **Postman** : requêtes mises à jour pour utiliser l’API Gateway KrakenD
-- **Comparaison des architectures** : les résultats des tests de charge entre l’ancienne architecture (monolithique) et la nouvelle (microservices) sont visibles dans **Grafana**
