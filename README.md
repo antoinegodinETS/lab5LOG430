@@ -1,102 +1,149 @@
-# lab5LOG430
+# Système Multi-Magasins - Architecture Microservices avec API Gateway et Observabilité
 
-# Système Multi-Magasins - Gestion de Caisse (FastAPI / PostgreSQL)
+Une application web Python modulaire pour gérer les **stocks**, **ventes**, **approvisionnements** et fonctionnalités **e-commerce**.  
+Basée sur **FastAPI**, elle expose des **API RESTful** et propose une **interface web** pour la maison mère et les magasins.  
+**PostgreSQL** assure la persistance des données, tandis qu’une **API Gateway** centralise les accès.
 
-Une application web Python modulaire pour gérer les stocks, ventes et approvisionnements de plusieurs magasins.  
-Basée sur **FastAPI**, elle expose des API RESTful et propose une interface web pour la maison mère et les magasins.  
-Persistance des données via **PostgreSQL**.
+---
 
 ## 🚀 Démarrage rapide
 
-### 1. Installer les dépendances :
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install -r requirements.txt
-cd src
-```
+1. **Installer les dépendances**
+2. **Initialiser la base de données**  
+   Les scripts `init_data.py` et `populate_ventes.py` sont automatiquement exécutés au lancement.  
+   👉 Pas besoin de lancer manuellement l'initialisation.
 
-### 2. Initialiser la base de données
-Les scripts `init_data.py` et `populate_ventes.py` sont automatiquement exécutés au lancement.  
-**Pas besoin de lancer manuellement l'initialisation.**
+3. **Lancer les services avec Docker Compose**  
+   - Interface accessible : [http://localhost:8088](http://localhost:8088)  
+   - API principale : [http://localhost:8003/docs](http://localhost:8003/docs)  
+   - API Gateway : [http://localhost:8080](http://localhost:8080)
 
-### 3. Lancer les services avec Docker Compose
-```bash
-docker-compose up --build
-```
-
-- Interface accessible via **http://localhost:8088/123**
-- API principale : **http://localhost:8003/docs**
+---
 
 ## 🧱 Structure du projet
 
-```
-├── .github/workflows/             # CI/CD avec GitHub Actions
-├── src/
-│   ├── api/                       # Routes FastAPI (REST)
-│   ├── interface.py               # Interface web (Jinja2)
-│   ├── main.py                    # API centrale
-│   ├── magasin/                   # Logique des magasins
-│   ├── logistique/                # Logique du centre logistique
-│   ├── maison_mere/               # Logique de la maison mère
-│   ├── common/                    # Modèles et configuration BD
-│   ├── init_data.py               # Init BD
-│   └── populate_ventes.py         # Génération de ventes de test
-├── templates/                     # HTML Jinja2
-├── static/                        # CSS, JS
-├── docker-compose.yml
-├── Dockerfile
-├── prometheus.yml                 # Config Prometheus
-├── requirements.txt
-└── README.md
-```
+### ✅ Fonctionnalités principales
 
-## ✅ Fonctionnalités principales
+- 🏬 Gestion de plusieurs **magasins**
+- 📦 Suivi des **stocks** (magasin + centre logistique)
+- 🔁 **Demandes d’approvisionnement** avec validation
+- 💰 **Ventes de produits** (avec vérification de stock)
+- 🛒 **Gestion du panier d'achat**
+- 📋 Création et gestion des **comptes clients**
+- 🛍️ Validation des **commandes** (check-out)
+- 📊 Tableau de bord centralisé (**performances**, rapports)
+- 🔍 Visualisation via **Prometheus + Grafana**
+- ⚖️ Répartition de charge avec **Nginx** et **KrakenD**
+- 🧪 Stress test via `k6`
 
-- 🏬 Gestion de plusieurs magasins
-- 📦 Suivi des stocks (magasin + centre logistique)
-- 🔁 Demandes d’approvisionnement avec validation
-- 💰 Ventes de produits (avec vérification de stock)
-- 📊 Tableau de bord centralisé (performances, rapport)
-- 🔍 Visualisation via Prometheus + Grafana
-- ⚖️ Répartition de charge avec Nginx
-- 🧪 Stress test via `ab` ou `hey`
+---
 
 ## 📊 Observabilité
 
-- **Prometheus** (http://localhost:9091)
-- **Grafana** (http://localhost:3000, login: `admin` / `admin`)
-- **Dashboards** : monitoring d’instances `interface1`, `interface2`, `api`
+- **Prometheus** : [http://localhost:9091](http://localhost:9091)
+- **Grafana** : [http://localhost:3000](http://localhost:3000)  
+  ➤ login : `admin` / `admin`
+
+Dashboards disponibles :
+- monitoring des services clients, panier, commande, stock
+- monitoring de l'API Gateway
+
+---
+
+## 🌐 API Gateway (KrakenD)
+
+### Endpoints exposés via KrakenD
+
+#### Clients
+- `GET /clients` : Retourne la liste des clients
+- `POST /clients` : Crée un nouveau client
+
+#### Panier
+- `GET /panier/{id}` : Retourne le contenu du panier
+- `POST /panier` : Ajoute un produit au panier
+
+#### Commande
+- `GET /commande/{id}` : Retourne les détails d'une commande
+- `POST /commande` : Valide une commande
+
+### Configuration de KrakenD
+
+L'API Gateway est configurée pour :
+- **Routage dynamique** : redirige les requêtes vers les services appropriés.
+- **Répartition de charge** : round-robin entre plusieurs instances d’un service.
+- **Transformation des réponses** : traitement des objets ou listes JSON.
+
+```json
+// Exemple de configuration pour l'endpoint /clients dans krakend.json
+{
+  "endpoint": "/clients",
+  "method": "GET",
+  "backend": [
+    {
+      "host": ["http://clients:8000"],
+      "url_pattern": "/clients"
+    }
+  ]
+}
+```
 
 ## ⚙️ CI/CD
 
 Le projet utilise **GitHub Actions** pour :
-- Linting avec Flake8
+
+- Linting avec **Flake8**
 - Exécution des tests
 - Build Docker
 
-> Workflow : `.github/workflows/python-app.yml`
+📁 Fichier : `.github/workflows/python-app.yml`
+
+---
 
 ## 🔧 Choix techniques
 
-| Technologie     | Rôle                                |
-|----------------|-------------------------------------|
-| Python 3.12     | Langage principal                   |
-| FastAPI         | API REST + Interface HTML           |
-| SQLAlchemy      | ORM (accès PostgreSQL)              |
-| PostgreSQL      | Base de données relationnelle       |
-| Docker          | Conteneurisation                    |
-| Grafana         | Visualisation                       |
-| Prometheus      | Monitoring                          |
-| Nginx           | Répartition de charge               |
-| GitHub Actions  | Intégration continue                |
+| Technologie     | Rôle                               |
+|------------------|--------------------------------------|
+| Python 3.12       | Langage principal                   |
+| FastAPI           | API REST + interface HTML          |
+| SQLAlchemy        | ORM (PostgreSQL)                   |
+| PostgreSQL        | Base de données relationnelle      |
+| Docker            | Conteneurisation                   |
+| KrakenD           | API Gateway                        |
+| Grafana           | Visualisation                      |
+| Prometheus        | Monitoring                         |
+| Nginx             | Répartition de charge              |
+| GitHub Actions    | Intégration continue (CI/CD)       |
+
+---
 
 ## 🧪 Test de charge
 
+### 🔁 Répartition de charge via KrakenD
+
+Le fichier `krakend.json` configure une **répartition de charge round-robin** entre plusieurs instances d’un service.
+
+#### 🔬 Exemple de test de charge avec `k6` :
+
 ```bash
-ab -n 1000 -c 20 http://localhost:8088/123/
+k6 run k6-lb.js
 ```
+
+## 📈 Résultats observables
+
+- **Latence** : mesurée via **Prometheus** / **Grafana**
+- **Disponibilité** : vérifiée via les logs centralisés
+- **Répartition de charge** : visualisée dans Grafana
+
+---
 
 ## 📝 Licence
 
 Ce projet est sous licence **MIT**.
+
+---
+
+## 📎 Notes supplémentaires
+
+- **Swagger / OpenAPI** : chaque service FastAPI expose sa documentation via `/docs`
+- **Postman** : requêtes mises à jour pour utiliser l’API Gateway KrakenD
+- **Comparaison des architectures** : les résultats des tests de charge entre l’ancienne architecture (monolithique) et la nouvelle (microservices) sont visibles dans **Grafana**
