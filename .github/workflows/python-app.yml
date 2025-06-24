@@ -1,9 +1,9 @@
-name: Python application & Docker publish
+name: Python application & Docker publish - Lab5
 
 on:
   push:
-    branches: [ main ]      # Build/push uniquement sur main
-  pull_request:             # Tests sur PR
+    branches: [ main ]
+  pull_request:
     branches: [ main ]
 
 jobs:
@@ -59,11 +59,10 @@ jobs:
           source venv/bin/activate
           PYTHONPATH=src python -m pytest
 
-
   docker:
-    needs: test     # Ne se lance que si le job 'test' passe !
+    needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'   # Build/push uniquement sur main
+    if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -76,11 +75,14 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker images
+      - name: Build and push Docker images for all services
         uses: docker/build-push-action@v5
         with:
-          context: .
           push: true
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/log430-lab4-api:${{ secrets.DOCKER_USERNAME }}
-            ${{ secrets.DOCKER_USERNAME }}/log430-lab4-interface:${{ secrets.DOCKER_USERNAME }}
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-clients:latest
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-panier:latest
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-commande:latest
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-logistique:latest
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-magasin:latest
+            ${{ secrets.DOCKER_USERNAME }}/log430-lab5-gateway:latest
