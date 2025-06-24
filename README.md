@@ -133,7 +133,8 @@ k6 run k6-lb.js
 - **Latence** : mesurée via **Prometheus** / **Grafana**
 - **Disponibilité** : vérifiée via les logs centralisés
 - **Répartition de charge** : visualisée dans Grafana
-
+![Alt text](docs/latence.PNG?raw=true "Latence")
+![Alt text](docs/5xx.PNG?raw=true "Erreur5xx")
 ---
 
 ## 📝 Licence
