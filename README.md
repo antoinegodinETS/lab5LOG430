@@ -134,7 +134,7 @@ k6 run k6-lb.js
 - **Disponibilité** : vérifiée via les logs centralisés
 - **Répartition de charge** : visualisée dans Grafana
 ![Alt text](docs/latence.PNG?raw=true "Latence")
-![Alt text](docs/5xx.PNG?raw=true "Erreur5xx")
+![Alt text](docs/erreur5xx.PNG?raw=true "Erreur5xx")
 ---
 
 ## 📝 Licence
